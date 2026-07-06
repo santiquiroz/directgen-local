@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from app.core.catalog import TaskType
@@ -34,14 +35,13 @@ def generate_image_onnx_directml(*, job: GenerationJob, model_path: Path) -> Non
     if not report.optimum_available:
         raise RuntimeError("optimum[onnxruntime] is not installed. Run scripts/setup-api.ps1 first.")
 
-    from optimum.onnxruntime import ORTDiffusionPipeline
-
     if job.request.seed is not None:
         import numpy as np
 
         np.random.seed(job.request.seed)
 
-    pipe = ORTDiffusionPipeline.from_pretrained(str(model_path), provider="DmlExecutionProvider")
+    pipeline_class = load_pipeline_class(model_path)
+    pipe = pipeline_class.from_pretrained(str(model_path), provider="DmlExecutionProvider")
     result = pipe(
         prompt=job.request.prompt,
         negative_prompt=job.request.negative_prompt or None,
@@ -53,3 +53,19 @@ def generate_image_onnx_directml(*, job: GenerationJob, model_path: Path) -> Non
     image = result.images[0]
     job.output_path.parent.mkdir(parents=True, exist_ok=True)
     image.save(job.output_path)
+
+
+def choose_pipeline_class_name(model_path: Path) -> str:
+    model_index = model_path / "model_index.json"
+    if not model_index.exists():
+        return "ORTDiffusionPipeline"
+    data = json.loads(model_index.read_text(encoding="utf-8"))
+    if data.get("_class_name") == "ORTStableDiffusionXLPipeline":
+        return "ORTStableDiffusionXLPipeline"
+    return "ORTDiffusionPipeline"
+
+
+def load_pipeline_class(model_path: Path):
+    from optimum import onnxruntime
+
+    return getattr(onnxruntime, choose_pipeline_class_name(model_path))

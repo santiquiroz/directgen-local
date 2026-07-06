@@ -8,6 +8,7 @@ from threading import Lock
 from uuid import uuid4
 
 from app.core.huggingface import download_model_snapshot
+from app.core.model_repair import repair_model_if_needed
 from app.core.model_store import ModelStore
 
 
@@ -96,6 +97,7 @@ def run_install_job(
     jobs.update(job.id, status="running")
     try:
         local_path = downloader(repo_id=job.repo_id, models_dir=models_dir)
+        repair_model_if_needed(local_path)
         model = models.register(repo_id=job.repo_id, local_path=local_path, task=job.task, runtime=job.runtime)
         jobs.update(job.id, status="succeeded", model_id=model.id)
     except Exception as exc:
