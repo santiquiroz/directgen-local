@@ -9,4 +9,4 @@ if (!(Test-Path $Python)) {
 
 $env:PYTHONPATH = Join-Path $Root "apps\api"
 Set-Location (Join-Path $Root "apps\api")
-& $Python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+& $Python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
