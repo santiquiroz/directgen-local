@@ -1,0 +1,5 @@
+onnxruntime-directml>=1.19,<2
+optimum[onnxruntime]>=1.23,<3
+diffusers>=0.31,<1
+transformers>=4.45,<5
+accelerate>=1,<2

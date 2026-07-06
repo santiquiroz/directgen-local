@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+.pytest_cache/
+node_modules/
+dist/
+bin/
+obj/
+artifacts/
+data/models/
+data/outputs/
+data/models.json
+*.pyc
+*.log
+*.tsbuildinfo
+.env
