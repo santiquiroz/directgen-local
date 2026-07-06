@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 const string Owner = "santiquiroz";
 const string Repo = "directgen-local";
-const string Version = "v0.1.1";
+const string Version = "v0.1.2";
 
 AppDomain.CurrentDomain.UnhandledException += (_, eventArgs) =>
 {
@@ -33,7 +33,8 @@ Directory.CreateDirectory(tempRoot);
 if (Directory.Exists(installDir))
 {
     Console.WriteLine("Removing previous installation...");
-    Directory.Delete(installDir, recursive: true);
+    StopExistingInstall(installDir);
+    DeleteDirectoryWithRetries(installDir);
 }
 
 Console.WriteLine("Downloading release source...");
@@ -122,6 +123,40 @@ static void CopyDirectory(string source, string destination)
         var target = file.Replace(source, destination);
         File.Copy(file, target, overwrite: true);
     }
+}
+
+static void StopExistingInstall(string installDir)
+{
+    var escapedInstallDir = InstallerSupport.EscapePowerShellSingleQuoted(installDir);
+    var script =
+        "$root = '" + escapedInstallDir + "'; " +
+        "Get-CimInstance Win32_Process | " +
+        "Where-Object { $_.CommandLine -and $_.CommandLine -like ('*' + $root + '*') -and $_.ProcessId -ne $PID } | " +
+        "ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }";
+    RunProcess("powershell", $"-NoProfile -ExecutionPolicy Bypass -Command \"{script}\"", Directory.GetCurrentDirectory(), quiet: true);
+    Thread.Sleep(1500);
+}
+
+static void DeleteDirectoryWithRetries(string directory)
+{
+    for (var attempt = 1; attempt <= 8; attempt++)
+    {
+        try
+        {
+            Directory.Delete(directory, recursive: true);
+            return;
+        }
+        catch (IOException) when (attempt < 8)
+        {
+            Thread.Sleep(750);
+        }
+        catch (UnauthorizedAccessException) when (attempt < 8)
+        {
+            Thread.Sleep(750);
+        }
+    }
+
+    Directory.Delete(directory, recursive: true);
 }
 
 static void CreateShortcut(string launcher)

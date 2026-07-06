@@ -41,6 +41,11 @@ public static class InstallerSupport
         }
     }
 
+    public static string EscapePowerShellSingleQuoted(string value)
+    {
+        return value.Replace("'", "''", StringComparison.Ordinal);
+    }
+
     private static ProcessStartInfo BuildStartInfo(string resolvedCommand, string arguments, string workingDirectory, bool quiet)
     {
         var extension = Path.GetExtension(resolvedCommand);
