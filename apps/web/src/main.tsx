@@ -49,6 +49,16 @@ type InstalledModel = {
   installed_at: string;
 };
 
+type InstallJob = {
+  id: string;
+  repo_id: string;
+  task: TaskType;
+  runtime: string;
+  status: "pending" | "running" | "succeeded" | "failed";
+  model_id?: string;
+  error?: string;
+};
+
 type HubModel = {
   repo_id: string;
   downloads?: number;
@@ -90,6 +100,7 @@ function App() {
   const [presets, setPresets] = useState<ModelPreset[]>([]);
   const [installed, setInstalled] = useState<InstalledModel[]>([]);
   const [hubModels, setHubModels] = useState<HubModel[]>([]);
+  const [installJobs, setInstallJobs] = useState<InstallJob[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [selectedModel, setSelectedModel] = useState("");
   const [task, setTask] = useState<TaskType>("text-to-image");
@@ -105,16 +116,18 @@ function App() {
   const [isPending, startTransition] = useTransition();
 
   async function refresh() {
-    const [runtimeData, presetData, installedData, jobData] = await Promise.all([
+    const [runtimeData, presetData, installedData, installJobData, jobData] = await Promise.all([
       requestJson<RuntimeStatus>("/api/runtime"),
       requestJson<ModelPreset[]>("/api/models/presets"),
       requestJson<InstalledModel[]>("/api/models/installed"),
+      requestJson<InstallJob[]>("/api/models/install/jobs"),
       requestJson<Job[]>("/api/generate/jobs")
     ]);
     startTransition(() => {
       setRuntime(runtimeData);
       setPresets(presetData);
       setInstalled(installedData);
+      setInstallJobs(installJobData);
       setJobs(jobData);
       setSelectedModel((current) => current || installedData[0]?.id || "");
     });
@@ -123,7 +136,18 @@ function App() {
   useEffect(() => {
     refresh().catch((error) => setMessage(error.message));
     const timer = window.setInterval(() => {
-      requestJson<Job[]>("/api/generate/jobs").then(setJobs).catch(() => undefined);
+      Promise.all([
+        requestJson<Job[]>("/api/generate/jobs"),
+        requestJson<InstallJob[]>("/api/models/install/jobs"),
+        requestJson<InstalledModel[]>("/api/models/installed")
+      ])
+        .then(([jobData, installJobData, installedData]) => {
+          setJobs(jobData);
+          setInstallJobs(installJobData);
+          setInstalled(installedData);
+          setSelectedModel((current) => current || installedData[0]?.id || "");
+        })
+        .catch(() => undefined);
     }, 2500);
     return () => window.clearInterval(timer);
   }, []);
@@ -143,12 +167,12 @@ function App() {
   async function installModel(repoId: string, modelTask: TaskType = task) {
     setMessage(`Instalando ${repoId}`);
     try {
-      await requestJson<InstalledModel>("/api/models/install", {
+      const job = await requestJson<InstallJob>("/api/models/install", {
         method: "POST",
         body: JSON.stringify({ repo_id: repoId, task: modelTask, runtime: "onnx-directml" })
       });
-      await refresh();
-      setMessage(`Modelo instalado: ${repoId}`);
+      setInstallJobs((current) => [job, ...current]);
+      setMessage(`Instalacion en cola: ${repoId}`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "No se pudo instalar el modelo");
     }
@@ -303,6 +327,15 @@ function App() {
           <span>Jobs</span>
         </div>
         <div className="jobs-list">
+          {installJobs.map((job) => (
+            <article key={job.id} className={`job-card ${job.status}`}>
+              <div>
+                <strong>install {job.status}</strong>
+                <p>{job.repo_id}</p>
+              </div>
+              {job.error && <p className="job-error"><TriangleAlert size={14} /> {job.error}</p>}
+            </article>
+          ))}
           {jobs.map((job) => (
             <article key={job.id} className={`job-card ${job.status}`}>
               <div>

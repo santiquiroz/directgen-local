@@ -9,7 +9,8 @@ from pydantic import BaseModel, Field
 
 from app.core.catalog import TaskType, get_curated_models, validate_repo_id
 from app.core.generation import run_generation_job
-from app.core.huggingface import download_model_snapshot, search_hub_models
+from app.core.huggingface import search_hub_models
+from app.core.install_jobs import InstallJobStore, create_install_job, run_install_job
 from app.core.jobs import JobStore, create_generation_job
 from app.core.model_store import ModelStore
 from app.core.runtime import detect_runtime, summarize_runtime
@@ -29,6 +30,7 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/outputs", StaticFiles(directory=OUTPUT_DIR), name="outputs")
 
 jobs = JobStore()
+install_jobs = InstallJobStore()
 models = ModelStore(REGISTRY_PATH)
 
 
@@ -79,20 +81,30 @@ def search_models(query: str = "", task: TaskType = TaskType.TEXT_TO_IMAGE) -> l
 
 
 @app.post("/api/models/install")
-def install_model(request: InstallModelRequest) -> dict[str, str]:
+def install_model(request: InstallModelRequest, background_tasks: BackgroundTasks) -> dict[str, object]:
     if not validate_repo_id(request.repo_id):
         raise HTTPException(status_code=400, detail="Invalid Hugging Face repo id")
+    job = create_install_job(
+        store=install_jobs,
+        repo_id=request.repo_id,
+        task=request.task.value,
+        runtime=request.runtime,
+    )
+    background_tasks.add_task(run_install_job, job=job, jobs=install_jobs, models=models, models_dir=MODEL_DIR)
+    return job.to_dict()
+
+
+@app.get("/api/models/install/jobs")
+def list_install_jobs() -> list[dict[str, object]]:
+    return [job.to_dict() for job in install_jobs.list()]
+
+
+@app.get("/api/models/install/jobs/{job_id}")
+def get_install_job(job_id: str) -> dict[str, object]:
     try:
-        local_path = download_model_snapshot(repo_id=request.repo_id, models_dir=MODEL_DIR)
-        model = models.register(
-            repo_id=request.repo_id,
-            local_path=local_path,
-            task=request.task.value,
-            runtime=request.runtime,
-        )
-        return model.to_dict()
-    except Exception as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
+        return install_jobs.get(job_id).to_dict()
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Install job not found") from exc
 
 
 @app.post("/api/generate/jobs")
