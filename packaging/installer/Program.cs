@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 const string Owner = "santiquiroz";
 const string Repo = "directgen-local";
-const string Version = "v0.1.3";
+const string Version = "v0.1.4";
 
 AppDomain.CurrentDomain.UnhandledException += (_, eventArgs) =>
 {
@@ -132,7 +132,11 @@ static void StopExistingInstall(string installDir)
         "$root = '" + escapedInstallDir + "'; " +
         "Get-CimInstance Win32_Process | " +
         "Where-Object { $_.CommandLine -and $_.CommandLine -like ('*' + $root + '*') -and $_.ProcessId -ne $PID } | " +
-        "ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }";
+        "ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }; " +
+        "Get-NetTCPConnection -LocalPort 8000,5173 -State Listen -ErrorAction SilentlyContinue | " +
+        "Select-Object -ExpandProperty OwningProcess -Unique | " +
+        "Where-Object { $_ -ne $PID } | " +
+        "ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }";
     RunProcess("powershell", $"-NoProfile -ExecutionPolicy Bypass -Command \"{script}\"", Directory.GetCurrentDirectory(), quiet: true);
     Thread.Sleep(1500);
 }
