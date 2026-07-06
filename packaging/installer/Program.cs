@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 const string Owner = "santiquiroz";
 const string Repo = "directgen-local";
-const string Version = "v0.1.7";
+const string Version = "v0.1.8";
 
 AppDomain.CurrentDomain.UnhandledException += (_, eventArgs) =>
 {
@@ -18,6 +18,7 @@ var installDir = Path.Combine(
 );
 var tempRoot = Path.Combine(Path.GetTempPath(), "DirectGenLocalInstaller");
 var zipPath = Path.Combine(tempRoot, $"{Version}.zip");
+var dataBackupDir = Path.Combine(tempRoot, "data-backup");
 var downloadUrl = $"https://github.com/{Owner}/{Repo}/archive/refs/tags/{Version}.zip";
 
 Console.WriteLine("DirectGen Local installer");
@@ -34,6 +35,7 @@ if (Directory.Exists(installDir))
 {
     Console.WriteLine("Removing previous installation...");
     StopExistingInstall(installDir);
+    InstallerSupport.BackupDataDirectory(installDir, dataBackupDir);
     DeleteDirectoryWithRetries(installDir);
 }
 
@@ -51,6 +53,7 @@ ZipFile.ExtractToDirectory(zipPath, tempRoot, overwriteFiles: true);
 var extracted = Directory.GetDirectories(tempRoot, $"{Repo}-{Version.TrimStart('v')}").FirstOrDefault()
     ?? Directory.GetDirectories(tempRoot).First(path => Path.GetFileName(path).StartsWith($"{Repo}-"));
 CopyDirectory(extracted, installDir);
+InstallerSupport.RestoreDataDirectory(installDir, dataBackupDir);
 
 Console.WriteLine("Installing API dependencies...");
 RunPowerShell(installDir, Path.Combine(installDir, "scripts", "setup-api.ps1"));

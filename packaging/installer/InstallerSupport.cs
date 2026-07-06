@@ -46,6 +46,34 @@ public static class InstallerSupport
         return value.Replace("'", "''", StringComparison.Ordinal);
     }
 
+    public static void BackupDataDirectory(string installDir, string backupDir)
+    {
+        var dataDir = Path.Combine(installDir, "data");
+        if (!Directory.Exists(dataDir))
+        {
+            return;
+        }
+        if (Directory.Exists(backupDir))
+        {
+            Directory.Delete(backupDir, recursive: true);
+        }
+        Directory.Move(dataDir, backupDir);
+    }
+
+    public static void RestoreDataDirectory(string installDir, string backupDir)
+    {
+        if (!Directory.Exists(backupDir))
+        {
+            return;
+        }
+        var dataDir = Path.Combine(installDir, "data");
+        if (Directory.Exists(dataDir))
+        {
+            Directory.Delete(dataDir, recursive: true);
+        }
+        Directory.Move(backupDir, dataDir);
+    }
+
     private static ProcessStartInfo BuildStartInfo(string resolvedCommand, string arguments, string workingDirectory, bool quiet)
     {
         var extension = Path.GetExtension(resolvedCommand);
