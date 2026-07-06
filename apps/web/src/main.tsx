@@ -14,6 +14,7 @@ import {
   Sparkles,
   TriangleAlert
 } from "lucide-react";
+import { chooseSelectedModel, directmlLabel } from "./modelSelection";
 import "./styles.css";
 
 type TaskType = "text-to-image" | "image-to-image" | "inpainting" | "image-to-video";
@@ -129,7 +130,7 @@ function App() {
       setInstalled(installedData);
       setInstallJobs(installJobData);
       setJobs(jobData);
-      setSelectedModel((current) => current || installedData[0]?.id || "");
+      setSelectedModel((current) => chooseSelectedModel(current, installedData));
     });
   }
 
@@ -145,7 +146,7 @@ function App() {
           setJobs(jobData);
           setInstallJobs(installJobData);
           setInstalled(installedData);
-          setSelectedModel((current) => current || installedData[0]?.id || "");
+          setSelectedModel((current) => chooseSelectedModel(current, installedData));
         })
         .catch(() => undefined);
     }, 2500);
@@ -395,7 +396,7 @@ function ModelCard({ model, onInstall }: { model: ModelPreset; onInstall: () => 
         <strong>{model.name}</strong>
         <p>{model.repo_id}</p>
       </div>
-      <span className={`compat ${model.directml}`}>{model.directml}</span>
+      <span className={`compat ${model.directml}`}>{directmlLabel(model.directml)}</span>
       <p>{model.notes}</p>
       <div className="model-actions">
         <small>{model.recommended_vram_gb} GB VRAM</small>
