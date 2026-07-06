@@ -4,7 +4,13 @@ using System.Runtime.InteropServices;
 
 const string Owner = "santiquiroz";
 const string Repo = "directgen-local";
-const string Version = "v0.1.0";
+const string Version = "v0.1.1";
+
+AppDomain.CurrentDomain.UnhandledException += (_, eventArgs) =>
+{
+    Console.Error.WriteLine(eventArgs.ExceptionObject);
+    PromptBeforeClose();
+};
 
 var installDir = Path.Combine(
     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -100,22 +106,7 @@ static void RunPowerShell(string workingDirectory, string scriptPath)
 
 static void RunProcess(string fileName, string arguments, string workingDirectory, bool quiet = false)
 {
-    var startInfo = new ProcessStartInfo
-    {
-        FileName = fileName,
-        Arguments = arguments,
-        WorkingDirectory = workingDirectory,
-        UseShellExecute = false,
-        RedirectStandardOutput = quiet,
-        RedirectStandardError = quiet
-    };
-
-    using var process = Process.Start(startInfo) ?? throw new InvalidOperationException($"Could not start {fileName}");
-    process.WaitForExit();
-    if (process.ExitCode != 0)
-    {
-        throw new InvalidOperationException($"{fileName} exited with code {process.ExitCode}");
-    }
+    InstallerSupport.RunProcess(fileName, arguments, workingDirectory, quiet);
 }
 
 static void CopyDirectory(string source, string destination)
@@ -145,4 +136,13 @@ static void CreateShortcut(string launcher)
     $shortcut.Save()
     """;
     RunProcess("powershell", $"-NoProfile -Command \"{command}\"", Directory.GetCurrentDirectory(), quiet: true);
+}
+
+static void PromptBeforeClose()
+{
+    if (Environment.UserInteractive)
+    {
+        Console.WriteLine("Press Enter to close.");
+        Console.ReadLine();
+    }
 }
