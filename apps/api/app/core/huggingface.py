@@ -26,7 +26,25 @@ def search_hub_models(*, query: str, task: str, limit: int = 12) -> list[dict[st
     ]
 
 
-def download_model_snapshot(*, repo_id: str, models_dir: Path) -> Path:
+def snapshot_allow_patterns(runtime: str) -> list[str] | None:
+    if runtime != "torch-directml":
+        return None
+    return [
+        "model_index.json",
+        "README.md",
+        "feature_extractor/*",
+        "scheduler/scheduler_config.json",
+        "text_encoder/config.json",
+        "text_encoder/model.safetensors",
+        "tokenizer/*",
+        "unet/config.json",
+        "unet/diffusion_pytorch_model.safetensors",
+        "vae/config.json",
+        "vae/diffusion_pytorch_model.safetensors",
+    ]
+
+
+def download_model_snapshot(*, repo_id: str, models_dir: Path, runtime: str = "onnx-directml") -> Path:
     if not validate_repo_id(repo_id):
         raise ValueError("Invalid Hugging Face repo id")
 
@@ -37,5 +55,5 @@ def download_model_snapshot(*, repo_id: str, models_dir: Path) -> Path:
 
     target_dir = models_dir / repo_id.replace("/", "__")
     target_dir.mkdir(parents=True, exist_ok=True)
-    snapshot_download(repo_id=repo_id, local_dir=target_dir)
+    snapshot_download(repo_id=repo_id, local_dir=target_dir, allow_patterns=snapshot_allow_patterns(runtime))
     return target_dir

@@ -45,8 +45,8 @@ class GenerateRequest(BaseModel):
     task: TaskType = TaskType.TEXT_TO_IMAGE
     prompt: str = Field(min_length=1)
     negative_prompt: str = ""
-    width: int = Field(default=1024, ge=256, le=2048)
-    height: int = Field(default=1024, ge=256, le=2048)
+    width: int = Field(default=768, ge=256, le=2048)
+    height: int = Field(default=768, ge=256, le=2048)
     steps: int = Field(default=24, ge=1, le=150)
     guidance_scale: float = Field(default=7.0, ge=0, le=30)
     seed: int | None = None

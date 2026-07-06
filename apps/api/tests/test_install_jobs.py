@@ -33,7 +33,7 @@ def test_run_install_job_registers_downloaded_model(tmp_path: Path):
         jobs=jobs,
         models=models,
         models_dir=tmp_path / "models",
-        downloader=lambda *, repo_id, models_dir: models_dir / repo_id.replace("/", "__"),
+        downloader=lambda *, repo_id, models_dir, runtime: models_dir / repo_id.replace("/", "__"),
     )
 
     finished = jobs.get(job.id)

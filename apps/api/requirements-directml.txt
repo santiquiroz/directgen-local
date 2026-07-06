@@ -1,6 +1,7 @@
 onnxruntime-directml>=1.19,<2
 optimum>=1.23,<3
 optimum-onnx>=0.1,<1
-diffusers>=0.31,<1
+torch-directml==0.2.5.dev240914
+diffusers>=0.31,<0.32
 transformers>=4.45,<5
 accelerate>=1,<2

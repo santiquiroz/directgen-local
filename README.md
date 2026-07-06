@@ -1,20 +1,21 @@
 # DirectGen Local
 
-Aplicacion web local para generar imagenes con modelos de Hugging Face usando ONNX Runtime + DirectML en Windows. El frontend es React/Vite y el backend es FastAPI.
+Aplicacion web local para generar imagenes con modelos de Hugging Face usando DirectML en Windows. El frontend es React/Vite y el backend es FastAPI.
 
 ## Estado del MVP
 
-- Imagen: soporte principal via modelos ONNX compatibles con `DmlExecutionProvider`.
+- Imagen: soporte principal via Diffusers + `torch-directml` sobre DirectX 12.
 - Hugging Face: busqueda por tarea, descarga con `snapshot_download` y registro local.
-- DirectML: deteccion de proveedores ONNX Runtime y mensajes de diagnostico.
-- Video: incluido en UI/API como modo experimental; el backend devuelve error claro hasta implementar un adaptador estable. La investigacion encontro que Optimum ONNX Runtime no tiene aun pipelines equivalentes para text/image-to-video.
+- DirectML: deteccion de `torch-directml`, proveedores ONNX Runtime y mensajes de diagnostico.
+- ONNX: mantenido como ruta experimental para modelos compatibles con `DmlExecutionProvider`.
+- Video: incluido en UI/API como modo experimental; el backend devuelve error claro hasta implementar un adaptador estable.
 
 ## Requisitos
 
 - Windows 10/11 con GPU DirectX 12 y drivers recientes.
 - Python 3.11 recomendado.
 - Node.js 22+.
-- Espacio en disco suficiente para modelos grandes. SDXL puede ocupar decenas de GB.
+- Espacio en disco suficiente para modelos grandes. El preset recomendado ocupa ~4-5 GB.
 
 ## Arranque
 
@@ -59,19 +60,19 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\DirectGen
 .\scripts\check-runtime.ps1
 ```
 
-El campo clave es `directml_ready`. Debe ser `true` y `selected_provider` debe ser `DmlExecutionProvider`.
+El campo clave es `directml_ready`. Debe ser `true`. Para la ruta recomendada tambien debe aparecer `torch_directml_available: true`.
 
 Si solo quieres abrir la UI y revisar el flujo sin instalar dependencias ML pesadas, puedes omitir `setup-directml.ps1`. La app arrancara, pero `/api/runtime` reportara que DirectML no esta listo.
 
 ## Modelo recomendado para primera prueba
 
-Usa un modelo ONNX/Olive ya preparado para DirectML. El preset inicial es:
+Usa el preset principal Torch-DirectML:
 
 ```text
-softwareweaver/stable-diffusion-xl-base-1.0-Olive-Onnx
+CompVis/stable-diffusion-v1-4
 ```
 
-Los modelos Diffusers comunes como `stabilityai/stable-diffusion-xl-base-1.0` o `runwayml/stable-diffusion-v1-5` pueden necesitar conversion a ONNX y optimizacion con Olive antes de ejecutarse bien en DirectML.
+El preset anterior SDXL Olive (`softwareweaver/stable-diffusion-xl-base-1.0-Olive-Onnx`) queda marcado como experimental porque reproduce un fallo conocido de ONNX Runtime con `com.microsoft.GroupNorm(1)` en DirectML.
 
 ## Arquitectura
 

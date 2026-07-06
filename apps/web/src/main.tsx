@@ -14,7 +14,7 @@ import {
   Sparkles,
   TriangleAlert
 } from "lucide-react";
-import { chooseSelectedModel, directmlLabel } from "./modelSelection";
+import { DIRECTML_SAFE_DEFAULT_SIZE, chooseSelectedModel, directmlLabel } from "./modelSelection";
 import "./styles.css";
 
 type TaskType = "text-to-image" | "image-to-image" | "inpainting" | "image-to-video";
@@ -36,6 +36,7 @@ type ModelPreset = {
   repo_id: string;
   task: TaskType;
   family: string;
+  runtime: "onnx-directml" | "torch-directml";
   directml: "ready" | "convert" | "experimental";
   notes: string;
   recommended_vram_gb: number;
@@ -108,8 +109,8 @@ function App() {
   const [prompt, setPrompt] = useState("cinematic macro photo of a translucent hummingbird made of glass");
   const [negativePrompt, setNegativePrompt] = useState("blurry, distorted, low detail");
   const [query, setQuery] = useState("stable diffusion xl onnx");
-  const [width, setWidth] = useState(1024);
-  const [height, setHeight] = useState(1024);
+  const [width, setWidth] = useState(DIRECTML_SAFE_DEFAULT_SIZE);
+  const [height, setHeight] = useState(DIRECTML_SAFE_DEFAULT_SIZE);
   const [steps, setSteps] = useState(24);
   const [guidance, setGuidance] = useState(7);
   const [seed, setSeed] = useState("42");
@@ -165,12 +166,16 @@ function App() {
     }
   }
 
-  async function installModel(repoId: string, modelTask: TaskType = task) {
+  async function installModel(
+    repoId: string,
+    modelTask: TaskType = task,
+    runtime: "onnx-directml" | "torch-directml" = "torch-directml"
+  ) {
     setMessage(`Instalando ${repoId}`);
     try {
       const job = await requestJson<InstallJob>("/api/models/install", {
         method: "POST",
-        body: JSON.stringify({ repo_id: repoId, task: modelTask, runtime: "onnx-directml" })
+        body: JSON.stringify({ repo_id: repoId, task: modelTask, runtime })
       });
       setInstallJobs((current) => [job, ...current]);
       setMessage(`Instalacion en cola: ${repoId}`);
@@ -277,6 +282,11 @@ function App() {
             <NumberField label="Steps" value={steps} min={1} max={150} step={1} onChange={setSteps} />
             <NumberField label="Guidance" value={guidance} min={0} max={30} step={0.5} onChange={setGuidance} />
           </div>
+          {(width > DIRECTML_SAFE_DEFAULT_SIZE || height > DIRECTML_SAFE_DEFAULT_SIZE) && (
+            <p className="runtime-error">
+              DirectML puede fallar en SDXL por encima de {DIRECTML_SAFE_DEFAULT_SIZE}x{DIRECTML_SAFE_DEFAULT_SIZE}. Prueba menor resolucion primero.
+            </p>
+          )}
           <label className="seed-field">
             Seed
             <input value={seed} onChange={(event) => setSeed(event.target.value)} inputMode="numeric" />
@@ -294,7 +304,7 @@ function App() {
             </div>
             <div className="model-list">
               {presets.map((model) => (
-                <ModelCard key={model.id} model={model} onInstall={() => installModel(model.repo_id, model.task)} />
+                <ModelCard key={model.id} model={model} onInstall={() => installModel(model.repo_id, model.task, model.runtime)} />
               ))}
             </div>
           </section>
@@ -312,7 +322,7 @@ function App() {
             </div>
             <div className="hub-results">
               {hubModels.map((model) => (
-                <button key={model.repo_id} onClick={() => installModel(model.repo_id)}>
+                <button key={model.repo_id} onClick={() => installModel(model.repo_id, task, "torch-directml")}>
                   <span>{model.repo_id}</span>
                   <small>{model.downloads?.toLocaleString() ?? "sin"} descargas</small>
                 </button>

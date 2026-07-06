@@ -11,6 +11,14 @@ def test_curated_models_include_directml_ready_image_presets():
     assert all(model.repo_id for model in models)
 
 
+def test_curated_models_recommend_torch_directml_stable_diffusion_first():
+    model = get_curated_models()[0]
+
+    assert model.repo_id == "CompVis/stable-diffusion-v1-4"
+    assert model.runtime == "torch-directml"
+    assert model.directml == "ready"
+
+
 def test_validate_repo_id_accepts_normal_hugging_face_ids():
     assert validate_repo_id("stabilityai/stable-diffusion-xl-base-1.0")
     assert validate_repo_id("softwareweaver/stable-diffusion-xl-base-1.0-Olive-Onnx")

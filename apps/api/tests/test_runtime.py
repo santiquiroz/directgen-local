@@ -25,5 +25,21 @@ def test_summarize_runtime_marks_directml_ready():
     assert summary["image_generation_ready"] is True
 
 
+def test_summarize_runtime_marks_torch_directml_ready_without_onnx_provider():
+    report = RuntimeReport(
+        onnxruntime_available=False,
+        providers=[],
+        selected_provider=None,
+        torch_directml_available=True,
+        optimum_available=False,
+        errors=[],
+    )
+
+    summary = summarize_runtime(report)
+
+    assert summary["directml_ready"] is True
+    assert summary["image_generation_ready"] is True
+
+
 def test_module_available_returns_false_for_missing_nested_module():
     assert module_available("package_that_does_not_exist.submodule") is False

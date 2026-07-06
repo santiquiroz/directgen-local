@@ -47,10 +47,10 @@ def detect_runtime() -> RuntimeReport:
     torch_directml_available = module_available("torch_directml")
     optimum_available = module_available("optimum.onnxruntime")
 
-    if onnxruntime_available and "DmlExecutionProvider" not in providers:
+    if onnxruntime_available and "DmlExecutionProvider" not in providers and not torch_directml_available:
         errors.append("DmlExecutionProvider is not available")
-    if not optimum_available:
-        errors.append("optimum[onnxruntime] is not installed")
+    if not optimum_available and not torch_directml_available:
+        errors.append("optimum[onnxruntime] or torch-directml is not installed")
 
     return RuntimeReport(
         onnxruntime_available=onnxruntime_available,
@@ -63,7 +63,8 @@ def detect_runtime() -> RuntimeReport:
 
 
 def summarize_runtime(report: RuntimeReport) -> dict[str, object]:
-    directml_ready = report.selected_provider == "DmlExecutionProvider"
+    onnx_directml_ready = report.selected_provider == "DmlExecutionProvider"
+    directml_ready = onnx_directml_ready or report.torch_directml_available
     return {
         "onnxruntime_available": report.onnxruntime_available,
         "providers": report.providers,
@@ -71,7 +72,7 @@ def summarize_runtime(report: RuntimeReport) -> dict[str, object]:
         "torch_directml_available": report.torch_directml_available,
         "optimum_available": report.optimum_available,
         "directml_ready": directml_ready,
-        "image_generation_ready": directml_ready and report.optimum_available,
+        "image_generation_ready": onnx_directml_ready and report.optimum_available or report.torch_directml_available,
         "video_generation_ready": report.torch_directml_available,
         "errors": report.errors,
     }

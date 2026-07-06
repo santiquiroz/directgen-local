@@ -19,6 +19,7 @@ class ModelPreset:
     repo_id: str
     task: TaskType
     family: str
+    runtime: str
     directml: str
     notes: str
     recommended_vram_gb: int
@@ -39,13 +40,25 @@ def validate_repo_id(repo_id: str) -> bool:
 def get_curated_models() -> list[ModelPreset]:
     return [
         ModelPreset(
+            id="sd14-torch-directml",
+            name="Stable Diffusion 1.4 DirectML",
+            repo_id="CompVis/stable-diffusion-v1-4",
+            task=TaskType.TEXT_TO_IMAGE,
+            family="Stable Diffusion 1.x",
+            runtime="torch-directml",
+            directml="ready",
+            notes="Recommended local GPU path via Torch-DirectML on DirectX 12.",
+            recommended_vram_gb=8,
+        ),
+        ModelPreset(
             id="sdxl-olive-onnx",
             name="Stable Diffusion XL ONNX Olive",
             repo_id="softwareweaver/stable-diffusion-xl-base-1.0-Olive-Onnx",
             task=TaskType.TEXT_TO_IMAGE,
             family="Stable Diffusion XL",
-            directml="ready",
-            notes="ONNX/Olive preset for DirectML-first image generation.",
+            runtime="onnx-directml",
+            directml="experimental",
+            notes="Known ONNX Runtime GroupNorm issue on DirectML; kept for testing only.",
             recommended_vram_gb=12,
         ),
         ModelPreset(
@@ -54,6 +67,7 @@ def get_curated_models() -> list[ModelPreset]:
             repo_id="runwayml/stable-diffusion-v1-5",
             task=TaskType.TEXT_TO_IMAGE,
             family="Stable Diffusion 1.x",
+            runtime="onnx-directml",
             directml="convert",
             notes="Popular baseline; install as Diffusers model, then export/optimize to ONNX.",
             recommended_vram_gb=8,
@@ -64,6 +78,7 @@ def get_curated_models() -> list[ModelPreset]:
             repo_id="stabilityai/stable-diffusion-xl-base-1.0",
             task=TaskType.TEXT_TO_IMAGE,
             family="Stable Diffusion XL",
+            runtime="onnx-directml",
             directml="convert",
             notes="High quality base model; best used after ONNX export and Olive optimization.",
             recommended_vram_gb=16,
@@ -74,6 +89,7 @@ def get_curated_models() -> list[ModelPreset]:
             repo_id="stabilityai/stable-video-diffusion-img2vid-xt",
             task=TaskType.IMAGE_TO_VIDEO,
             family="Stable Video Diffusion",
+            runtime="torch-directml",
             directml="experimental",
             notes="Video support is experimental on DirectML; expect torch-directml constraints.",
             recommended_vram_gb=16,

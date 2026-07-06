@@ -92,11 +92,11 @@ def run_install_job(
     jobs: InstallJobStore,
     models: ModelStore,
     models_dir: Path,
-    downloader: Callable[[str, Path], Path] = download_model_snapshot,
+    downloader: Callable[..., Path] = download_model_snapshot,
 ) -> None:
     jobs.update(job.id, status="running")
     try:
-        local_path = downloader(repo_id=job.repo_id, models_dir=models_dir)
+        local_path = downloader(repo_id=job.repo_id, models_dir=models_dir, runtime=job.runtime)
         repair_model_if_needed(local_path)
         model = models.register(repo_id=job.repo_id, local_path=local_path, task=job.task, runtime=job.runtime)
         jobs.update(job.id, status="succeeded", model_id=model.id)

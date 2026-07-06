@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 const string Owner = "santiquiroz";
 const string Repo = "directgen-local";
-const string Version = "v0.1.8";
+const string Version = "v0.1.9";
 
 AppDomain.CurrentDomain.UnhandledException += (_, eventArgs) =>
 {
